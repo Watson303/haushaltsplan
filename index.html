@@ -38,6 +38,11 @@ h1{font-size:clamp(28px,6vw,40px);line-height:1.05;margin:0;font-weight:800;text
 .day b{font-size:17px;color:#fff}.day small{font-size:13px}
 .day.on{background:#fff;color:var(--band)}.day.on b{color:var(--band)}
 .day.today{box-shadow:inset 0 0 0 2px var(--acc)}
+.day{position:relative}.day.ex::after{content:'';position:absolute;top:6px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--acc)}
+.form{background:var(--card);border-radius:16px;padding:16px;margin-top:14px;border:2px solid var(--acc)}
+.form .g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0 12px}
+.form select.inp{appearance:auto}
+.xtag{background:var(--acc);color:#fff;border-radius:999px;padding:2px 10px;font-weight:800}
 .bar{width:70%;height:5px;border-radius:3px;background:rgba(255,255,255,.18);overflow:hidden}.bar i{display:block;height:100%;background:var(--acc)}
 .day.on .bar{background:#d7e4e8}
 main{padding:16px max(4vw,14px) 40px}
@@ -105,6 +110,22 @@ details li{margin:6px 0}
   </div>
   <div class="sum" id="sum"></div>
   <div id="list"></div>
+  <button class="btn hot" id="xopen" style="width:100%;margin-top:6px">+ Extra-Aufgabe planen</button>
+  <form class="form" id="xform" hidden>
+    <b style="font-size:18px">Extra-Aufgabe planen</b>
+    <p class="tip" style="margin:4px 0 12px">Zum Beispiel Großreinemachen, Keller entrümpeln oder Fenster außen. Erscheint bei euch beiden am gewählten Tag.</p>
+    <label class="lbl" for="xt">Was ist zu tun?</label><input id="xt" class="inp" maxlength="120" required placeholder="z. B. Küchenschränke ausräumen und auswischen">
+    <div class="g2">
+      <div><label class="lbl" for="xd">Datum</label><input id="xd" class="inp" type="date" required></div>
+      <div><label class="lbl" for="xw">Anlass / Uhrzeit</label><input id="xw" class="inp" maxlength="60" placeholder="z. B. Großreinemache-Tag"></div>
+      <div><label class="lbl" for="xp">Wer</label><select id="xp" class="inp"><option value="G">Gemeinsam</option><option value="C">Christoffer</option><option value="A">Ariane</option></select></div>
+      <div><label class="lbl" for="xa">Aufwand</label><select id="xa" class="inp"><option value="1">leicht</option><option value="2" selected>mittel</option><option value="3">schwer</option></select></div>
+      <div><label class="lbl" for="xm">Minuten (ca.)</label><input id="xm" class="inp" type="number" min="0" max="600" step="5" value="30"></div>
+    </div>
+    <label class="lbl" for="xn">Notiz (optional)</label><input id="xn" class="inp" maxlength="300" placeholder="z. B. Christoffer sortiert am Tisch, Ariane räumt ein">
+    <div class="tools" style="margin-top:4px"><button class="btn hot" type="submit">Eintragen</button><button class="btn" type="button" id="xmore">Eintragen + noch eine</button><button class="btn" type="button" id="xclose">Abbrechen</button></div>
+    <p class="tip" id="xmsg" style="margin:8px 0 0"></p>
+  </form>
   <div class="tools">
     <button class="btn" id="bad">Schlechter Tag – meine Aufgaben auf morgen</button>
     <button class="btn" id="tmr">20-Min.-Block starten</button>
@@ -186,17 +207,19 @@ const now=new Date();let M0=mon(now),day=(now.getDay()+6)%7;
 let filt=ls.get('hh:f','alle'),me=ls.get('hh:me','C');
 let S={},WD={},db=null,unA=null,unB=null,ltimer=null;const chain={};
 const swp=p=>p==='C'?'A':p==='A'?'C':p;
+function xt(v){const x=v&&v.x;if(!x||v.del||typeof x.t!=='string'||!x.t)return null;return{t:x.t.slice(0,120),w:(typeof x.w==='string'&&x.w?x.w.slice(0,60):'Extra-Aufgabe'),p:['C','A','G'].includes(x.p)?x.p:'G',a:[1,2,3].includes(x.a)?x.a:2,m:Math.max(0,Math.min(600,Math.round(+x.m||0))),tip:typeof x.n==='string'&&x.n?x.n.slice(0,300):'',ex:1}}
 function inst(){const wi=wkInfo(M0),out=[];
+  for(const k in S){const mm=/^x-[a-z0-9]+@([0-6])$/.exec(k);if(!mm)continue;const t=xt(S[k]);if(t)out.push(mk({...t,id:k},k,+mm[1]))}
   for(const t of T){if(t.b2&&wi.w%2)continue;for(const od of t.d)out.push(mk(t,t.id+'@'+od,od))}
   const n=Math.ceil(add(M0,5).getDate()/7);
   for(const m of M)if(m.n===n)out.push(mk({...m,w:'Monatsaufgabe ('+n+'. Samstag)'},'m-'+m.id+'@5',5));
   return out}
-function mk(t,key,od){const s=S[key]||{};const mv=Number.isInteger(s.mv)&&s.mv>=0&&s.mv<=5?s.mv:od;return{t,key,od,s,day:mv,p:s.sw?swp(t.p):t.p,done:!!s.done}}
+function mk(t,key,od){const s=S[key]||{};const mv=Number.isInteger(s.mv)&&s.mv>=0&&s.mv<=6?s.mv:od;return{t,key,od,s,day:mv,p:s.sw?swp(t.p):t.p,done:!!s.done}}
 function render(){
   const wi=wkInfo(M0),all=inst(),isNow=+M0===+mon(new Date());
   $('wkl').textContent='KW '+wi.w+' · '+M0.getDate()+'.'+(M0.getMonth()+1)+'.–'+add(M0,6).getDate()+'.'+(add(M0,6).getMonth()+1)+'.';
   $('days').innerHTML=DAYS.map((d,i)=>{const its=all.filter(x=>x.day===i),tm=its.reduce((a,x)=>a+x.t.m,0),dm=its.filter(x=>x.done).reduce((a,x)=>a+x.t.m,0);
-    return `<button class="day${i===day?' on':''}${isNow&&i===(new Date().getDay()+6)%7?' today':''}" data-d="${i}" aria-label="${DL[i]}"><b>${d}</b><small>${add(M0,i).getDate()}.</small><span class="bar"><i style="width:${tm?Math.round(dm/tm*100):0}%"></i></span></button>`}).join('');
+    const hx=its.some(x=>x.t.ex);return `<button class="day${hx?' ex':''}${i===day?' on':''}${isNow&&i===(new Date().getDay()+6)%7?' today':''}" data-d="${i}" aria-label="${DL[i]}"><b>${d}</b><small>${add(M0,i).getDate()}.</small><span class="bar"><i style="width:${tm?Math.round(dm/tm*100):0}%"></i></span></button>`}).join('');
   $('flt').innerHTML='<span class="lbl">Zeigen:</span>'+[['alle','Alle'],['C','Christoffer'],['A','Ariane']].map(([k,l])=>`<button class="chip" data-f="${k}" aria-pressed="${filt===k}">${l}</button>`).join('');
   $('me').innerHTML='<span class="lbl">Ich bin:</span>'+['C','A'].map(k=>`<button class="chip" data-me="${k}" aria-pressed="${me===k}">${P[k]}</button>`).join('');
   const dn=WD.dienst||{};
@@ -216,11 +239,11 @@ function render(){
   $('bad').hidden=day>4;
   render.done=true}
 function card(x){const t=x.t,by=x.s.by==='C'||x.s.by==='A'?P[x.s.by]:'';
-  const opts=[0,1,2,3,4,5].map(i=>`<option value="${i}"${i===x.day?' selected':''}>${DL[i]}</option>`).join('');
+  const opts=[0,1,2,3,4,5,6].map(i=>`<option value="${i}"${i===x.day?' selected':''}>${DL[i]}</option>`).join('');
   return `<div class="card${x.done?' done':''}"><button class="chk" data-k="${x.key}" aria-pressed="${x.done}" aria-label="Erledigt: ${esc(t.t)}"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-  <div><div class="t">${esc(t.t)}</div><div class="meta"><span class="who ${x.p}">${P[x.p]}</span><span class="eff e${t.a}" title="${EF[t.a]}"><i></i><i></i><i></i> ${EF[t.a]}</span><span>${t.m} Min.</span>${t.pf?'<span>Pflicht</span>':''}${x.day!==x.od?`<span class="mv">verschoben von ${DAYS[x.od]}</span>`:''}${x.s.sw?'<span class="mv">getauscht</span>':''}${x.done&&by?`<span>✓ ${by}</span>`:''}</div></div>
+  <div><div class="t">${esc(t.t)}</div><div class="meta"><span class="who ${x.p}">${P[x.p]}</span><span class="eff e${t.a}" title="${EF[t.a]}"><i></i><i></i><i></i> ${EF[t.a]}</span><span>${t.m} Min.</span>${t.pf?'<span>Pflicht</span>':''}${t.ex?'<span class="xtag">Extra</span>':''}${x.day!==x.od?`<span class="mv">verschoben von ${DAYS[x.od]}</span>`:''}${x.s.sw?'<span class="mv">getauscht</span>':''}${x.done&&by?`<span>✓ ${by}</span>`:''}</div></div>
   ${t.tip?`<p class="tip">${esc(t.tip)}</p>`:''}
-  <div class="act"><label class="lbl" for="mv-${x.key}">Tag</label><select id="mv-${x.key}" data-mv="${x.key}" data-od="${x.od}">${opts}</select>${t.p!=='G'?`<button data-sw="${x.key}">${x.s.sw?'Zurücktauschen':'Tauschen'}</button>`:''}</div></div>`}
+  <div class="act"><label class="lbl" for="mv-${x.key}">Tag</label><select id="mv-${x.key}" data-mv="${x.key}" data-od="${x.od}">${opts}</select>${t.p!=='G'?`<button data-sw="${x.key}">${x.s.sw?'Zurücktauschen':'Tauschen'}</button>`:''}${t.ex?`<button data-del="${x.key}">${delArm===x.key?'Wirklich löschen?':'Löschen'}</button>`:''}</div></div>`}
 // Nach dem Einrichten hier die Web-App-URL aus Google Apps Script eintragen – dann muss man nur noch den Code eingeben:
 const PRESET_URL='https://script.google.com/macros/s/AKfycbxoTrAAF0rgtYBUiNrlddX_Qmmq2D7z_Iied0qRKkoGXqKplamhx44V6kdGIRWn20kx/exec';
 const okU=u=>/^https:\/\/script\.google\.com\//.test(u||'');
@@ -244,6 +267,10 @@ async function pull(){if(!gas())return;const wk=wkInfo(M0).key;
     if(!Q.length)$('st').textContent='Synchronisiert über eure Google-Tabelle · '+new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}
   catch(e){$('st').textContent='Offline – zeige den letzten Stand.'}}
 function push(op){Q.push(op);ls.set('hh:q',Q);flush().then(pull)}
+let delArm='';
+function saveOther(wk,key,v){if(wk===wkInfo(M0).key){S={...S,[key]:v};render()}
+  if(db){db.doc('weeks/'+wk+'/items/'+key).set(v).catch(()=>{$('st').textContent='Speichern fehlgeschlagen.'})}
+  else{const c=ls.get('hh:'+wk,{});c[key]=v;ls.set('hh:'+wk,c);if(wk===wkInfo(M0).key)cacheWeek(wk);if(gas())push({w:wk,k:key,v})}}
 function save(key,patch){const cur={...(S[key]||{}),...patch};S={...S,[key]:cur};render();
   const wk=wkInfo(M0).key;
   if(db){chain[key]=(chain[key]||Promise.resolve()).then(()=>db.doc('weeks/'+wk+'/items/'+key).set(cur)).catch(e=>{$('st').textContent='Speichern fehlgeschlagen – bitte nochmal versuchen.'})}
@@ -276,7 +303,18 @@ document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)r
   else if(b.dataset.me){me=b.dataset.me;ls.set('hh:me',me);render()}
   else if(b.dataset.di){const dn={...(WD.dienst||{})};dn[b.dataset.di]=!dn[b.dataset.di];saveWeek({dienst:dn})}
   else if(b.dataset.k){const k=b.dataset.k,d=!(S[k]&&S[k].done);save(k,{done:d,by:d?me:null})}
-  else if(b.dataset.sw){const k=b.dataset.sw;save(k,{sw:!(S[k]&&S[k].sw)})}});
+  else if(b.dataset.sw){const k=b.dataset.sw;save(k,{sw:!(S[k]&&S[k].sw)})}
+  else if(b.dataset.del){const k=b.dataset.del;if(delArm===k){delArm='';save(k,{del:true})}else{delArm=k;render();setTimeout(()=>{if(delArm===k){delArm='';render()}},4000)}}});
+const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+$('xopen').onclick=()=>{const f=$('xform');f.hidden=!f.hidden;if(!f.hidden){$('xd').value=iso(add(M0,day));$('xmsg').textContent='';$('xt').focus()}};
+$('xclose').onclick=()=>{$('xform').hidden=true};
+let xKeep=false;$('xmore').onclick=()=>{xKeep=true;$('xform').requestSubmit()};
+$('xform').addEventListener('submit',e=>{e.preventDefault();const t=$('xt').value.trim(),dv=$('xd').value;if(!t||!/^\d{4}-\d{2}-\d{2}$/.test(dv)){xKeep=false;return}
+  const [y,mo,dd]=dv.split('-').map(Number),dt=new Date(y,mo-1,dd),m0=mon(dt),wk=wkInfo(m0).key,di=(dt.getDay()+6)%7;
+  const key='x-'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)+'@'+di;
+  saveOther(wk,key,{x:{t,w:$('xw').value.trim(),p:$('xp').value,a:+$('xa').value,m:+$('xm').value||0,n:$('xn').value.trim()}});
+  $('xmsg').textContent='Eingetragen für '+DL[di]+', '+dd+'.'+mo+'.'+y+'.';$('xt').value='';$('xn').value='';
+  if(!xKeep){$('xform').hidden=true;M0=m0;day=di;load();$('tnote').innerHTML='Extra-Aufgabe eingetragen – ihr seht sie beide am '+DL[di]+'.'}else $('xt').focus();xKeep=false});
 document.addEventListener('change',e=>{const s=e.target;if(s.dataset&&s.dataset.mv){const v=+s.value,od=+s.dataset.od;save(s.dataset.mv,{mv:v===od?null:v})}});
 $('prev').onclick=()=>{M0=add(M0,-7);day=0;load()};
 $('next').onclick=()=>{M0=add(M0,7);day=0;load()};

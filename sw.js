@@ -1,5 +1,5 @@
 // Haushaltsplan – Offline-Cache. Bei einem Update die Versionsnummer erhöhen.
-const CACHE = 'haushalt-v2';
+const CACHE = 'haushalt-v3';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
