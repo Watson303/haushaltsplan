@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Haushaltsplan</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1f4e5f">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Haushalt">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: warm, praktisch, ermutigend – kein Druck
+   IDEA: der Wochenplan am Kühlschrank, nur zum Abhaken in der Hand
+   PICTURE: Wochenleiste mit Fortschritt + die Karten des Tages
+   COLOUR and TYPE: Petrol-Band, weiße Karten, Tomaten-Akzent; Nunito 800/400
+   LAYOUT: eine Spalte bis 760px, Band oben randlos */
+:root{color-scheme:light dark;--bg:light-dark(#eaf1f3,#0e191d);--card:light-dark(#ffffff,#172830);--ink:light-dark(#12252b,#e6eff1);--mut:light-dark(#566d74,#93aab1);--line:light-dark(#d6e2e5,#273b42);--band:#1f4e5f;--band2:#173e4c;--acc:#ff6a3d;--c:light-dark(#2563c9,#7aa7f0);--a:light-dark(#b52f80,#ee8cc6);--g:light-dark(#0f7f74,#5fd1c4);--cb:light-dark(#e3ecfb,#1d2f4d);--ab:light-dark(#f8e3ef,#43203a);--gb:light-dark(#dcf3f0,#173d39)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Nunito,system-ui,sans-serif;overflow-x:clip}
+button,select{font:inherit;color:inherit}
+button:focus-visible,select:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.top{background:var(--band);color:#fff;padding:20px max(4vw,14px) 18px}
+.wrap{max-width:760px;margin:0 auto}
+.hrow{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+h1{font-size:clamp(28px,6vw,40px);line-height:1.05;margin:0;font-weight:800;text-wrap:balance}
+.wk{display:flex;align-items:center;gap:6px}
+.wk button{background:var(--band2);border:0;border-radius:12px;width:44px;height:44px;color:#fff;font-size:22px;cursor:pointer}
+.wk span{font-weight:600;white-space:nowrap;font-size:15px}
+.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-top:16px}
+.day{background:var(--band2);border:0;border-radius:14px;padding:8px 2px 10px;color:#cfe3ea;cursor:pointer;min-height:64px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.day b{font-size:17px;color:#fff}.day small{font-size:13px}
+.day.on{background:#fff;color:var(--band)}.day.on b{color:var(--band)}
+.day.today{box-shadow:inset 0 0 0 2px var(--acc)}
+.bar{width:70%;height:5px;border-radius:3px;background:rgba(255,255,255,.18);overflow:hidden}.bar i{display:block;height:100%;background:var(--acc)}
+.day.on .bar{background:#d7e4e8}
+main{padding:16px max(4vw,14px) 40px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chip{border:2px solid var(--line);background:var(--card);border-radius:999px;padding:8px 14px;min-height:44px;cursor:pointer;font-weight:600}
+.chip[aria-pressed=true]{border-color:var(--band);background:var(--band);color:#fff}
+.lbl{color:var(--mut);font-size:14px;font-weight:600;margin-right:2px}
+.row{margin-top:12px}
+.note{background:var(--card);border-left:5px solid var(--acc);border-radius:12px;padding:12px 14px;margin-top:14px;font-size:15px}
+.note:empty{display:none}
+.sum{display:grid;gap:8px;background:var(--card);border-radius:16px;padding:14px;margin-top:14px}
+.sum .r{display:grid;grid-template-columns:7.5em minmax(0,1fr) 5.5em;gap:10px;align-items:center;font-size:14px}
+.sum .r span:last-child{text-align:right;white-space:nowrap;color:var(--mut)}
+.track{height:10px;border-radius:6px;background:var(--line);overflow:hidden}.track i{display:block;height:100%}
+h2{font-size:15px;margin:22px 0 8px;color:var(--mut);font-weight:800}
+.card{display:grid;grid-template-columns:52px minmax(0,1fr);gap:4px 12px;background:var(--card);border-radius:16px;padding:12px;margin-bottom:10px;border:2px solid transparent}
+.card.done{opacity:.6}.card.done .t{text-decoration:line-through}
+.chk{width:48px;height:48px;border-radius:14px;border:3px solid var(--line);background:transparent;cursor:pointer;display:grid;place-items:center;grid-row:span 2}
+.chk svg{width:26px;height:26px;opacity:0}
+.done .chk{background:var(--g);border-color:var(--g)}.done .chk svg{opacity:1}
+.t{font-weight:800;font-size:17px;line-height:1.3}
+.meta{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;font-size:13px;color:var(--mut);margin-top:4px}
+.who{border-radius:999px;padding:2px 10px;font-weight:800}
+.who.C{background:var(--cb);color:var(--c)}.who.A{background:var(--ab);color:var(--a)}.who.G{background:var(--gb);color:var(--g)}
+.eff{display:inline-flex;gap:3px;align-items:center}.eff i{width:8px;height:8px;border-radius:50%;background:var(--line)}
+.eff.e1 i:nth-child(-n+1),.eff.e2 i:nth-child(-n+2),.eff.e3 i:nth-child(-n+3){background:var(--acc)}
+.tip{grid-column:2;margin:6px 0 0;font-size:14px;color:var(--mut)}
+.act{grid-column:2;display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.act select,.act button,.btn{border:2px solid var(--line);background:transparent;border-radius:12px;min-height:44px;padding:0 12px;cursor:pointer;font-size:15px}
+.mv{color:var(--acc);font-weight:700}
+.free{background:var(--card);border-radius:20px;padding:28px 20px;text-align:center}
+.free svg{width:min(220px,60%);height:auto}
+.free b{display:block;font-size:26px;margin-top:8px}
+.tools{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+.btn{font-weight:700}.btn.hot{background:var(--acc);border-color:var(--acc);color:#fff}
+.timer{font-weight:800;font-variant-numeric:tabular-nums}
+details{background:var(--card);border-radius:16px;padding:12px 16px;margin-top:22px}
+summary{font-weight:800;cursor:pointer;min-height:32px}
+details li{margin:6px 0}
+.inp{display:block;width:100%;min-height:44px;font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:2px solid var(--line);border-radius:12px;padding:8px 12px;margin:4px 0 10px}
+.st{font-size:13px;color:var(--mut);margin-top:18px}
+@media(prefers-reduced-motion:no-preference){.card{transition:opacity .25s}.bar i,.track i{transition:width .4s}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <div class="hrow">
+    <h1>Haushalt</h1>
+    <div class="wk"><button id="prev" aria-label="Vorige Woche">‹</button><span id="wkl"></span><button id="next" aria-label="Nächste Woche">›</button></div>
+  </div>
+  <div class="days" id="days"></div>
+</div></header>
+<main><div class="wrap">
+  <div class="chips" id="flt"><span class="lbl">Zeigen:</span></div>
+  <div class="chips row" id="me"><span class="lbl">Ich bin:</span></div>
+  <div class="chips row" id="dienst"><span class="lbl">Ariane hat Dienst:</span></div>
+  <div class="note" id="note"></div>
+  <div class="sum" id="login" hidden>
+    <b style="font-size:18px">Anmelden</b>
+    <span class="tip" style="margin:0">Eure Daten liegen in eurer Google-Tabelle. Code eingeben – dann ist alles wieder da.</span>
+    <label class="lbl" for="lc">Zugangscode</label>
+    <input id="lc" class="inp" autocomplete="current-password" type="password">
+    <button class="btn hot" id="lgo">Anmelden</button>
+    <span class="tip" id="lmsg" style="margin:0"></span>
+  </div>
+  <div class="sum" id="sum"></div>
+  <div id="list"></div>
+  <div class="tools">
+    <button class="btn" id="bad">Schlechter Tag – meine Aufgaben auf morgen</button>
+    <button class="btn" id="tmr">20-Min.-Block starten</button>
+  </div>
+  <div class="note" id="tnote"></div>
+  <details>
+    <summary>Spielregeln</summary>
+    <ol>
+      <li>Christoffer: höchstens 20 Min. am Stück, dann 5–10 Min. Pause. Aufgaben über den Tag verteilen.</li>
+      <li>Schlechter Tag? Aufgaben verschieben oder tauschen – ohne Diskussion. Pflicht sind nur Spülmaschine und die 15-Min.-Küche.</li>
+      <li>„Schwer“ macht Ariane oder ihr gemeinsam. Dafür übernimmt Christoffer unter der Woche mehr leichte, sitzende Aufgaben.</li>
+      <li>Ariane steht im Dienst den ganzen Tag: unter der Woche für sie nur kurze Aufgaben (max. 10–15 Min.).</li>
+      <li>Sport-Abende: nur die 15-Min.-Küche, nichts zusätzlich.</li>
+      <li>Sonntag ist frei.</li>
+      <li>Christoffer im Außendienst: seine Homeoffice-Aufgaben rutschen einen Tag weiter.</li>
+    </ol>
+  </details>
+  <details id="cfgbox">
+    <summary>Google-Speicher &amp; Ariane verbinden</summary>
+    <p class="tip" style="margin:8px 0">Adresse und Code eurer Google-Tabelle (siehe Anleitung). Danach seht ihr beide dieselben Haken.</p>
+    <label class="lbl" for="cu">Sync-Adresse (Apps Script)</label>
+    <input id="cu" class="inp" inputmode="url" autocomplete="off" placeholder="https://script.google.com/macros/s/…/exec">
+    <label class="lbl" for="cc">Zugangscode</label>
+    <input id="cc" class="inp" autocomplete="off" placeholder="euer gemeinsamer Code">
+    <div class="tools" style="margin-top:12px"><button class="btn hot" id="csave">Speichern</button><button class="btn" id="ari">Einrichtungs-Link für Ariane</button><button class="btn" id="mylink">Wiederherstellungs-Link für mich</button></div>
+    <input id="alink" class="inp" readonly hidden aria-label="Einrichtungs-Link">
+    <p class="tip" id="cmsg" style="margin:8px 0 0"></p>
+  </details>
+  <div class="st" id="st">Verbinde …</div>
+</div></main>
+<script>
+{
+const DAYS=['Mo','Di','Mi','Do','Fr','Sa','So'];
+const DL=['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'];
+const P={C:'Christoffer',A:'Ariane',G:'Gemeinsam'};
+const EF=['','leicht','mittel','schwer'];
+const W6=[0,1,2,3,4,5],W5=[0,1,2,3,4];
+const T=[
+{id:'spuel',d:W6,w:'Homeoffice-Pause',t:'Spülmaschine aus- und einräumen',p:'C',a:1,m:10,pf:1,tip:'Geschirr erst auf der Arbeitsfläche sammeln, dann einsortieren.'},
+{id:'robo',d:[0,2,4,5],w:'Homeoffice-Pause',t:'Saugwischroboter per App starten, danach Wassertank auffüllen/leeren',p:'C',a:1,m:5,tip:'Am Vorabend nach der Küche kurz Stühle hoch und Kram vom Boden – dann läuft er durch.'},
+{id:'post',d:W5,w:'Homeoffice-Pause',t:'Kurz lüften, Post und Papierkram sortieren',p:'C',a:1,m:5},
+{id:'w1',d:[0],w:'Homeoffice-Pause',t:'Wäsche 1 (Bunt/Dunkel) waschen und aufhängen',p:'C',a:2,m:20,tip:'Wäschekorb auf einen Hocker stellen – nicht vom Boden heben.'},
+{id:'w1f',d:[1],w:'Homeoffice-Pause',t:'Wäsche 1 abnehmen und im Sitzen falten',p:'C',a:1,m:15,tip:'Stapel gleich nach Zimmern sortieren.'},
+{id:'muell',d:[2],w:'Homeoffice-Pause',t:'Mülleimer leeren, Gelbe Säcke und Altpapier sammeln',p:'C',a:2,m:10},
+{id:'w2',d:[3],w:'Homeoffice-Pause',t:'Wäsche 2 (Handtücher/Bettwäsche) waschen und aufhängen',p:'C',a:2,m:20},
+{id:'w2f',d:[4],w:'Homeoffice-Pause',t:'Wäsche 2 abnehmen und falten',p:'C',a:1,m:15},
+{id:'kuehl',d:[4],w:'Homeoffice-Pause',t:'Kühlschrank-Check: Reste und Abgelaufenes raus',p:'C',a:1,m:10},
+{id:'eink',d:[3],w:'Nach Arianes Dienst',t:'Rewe-Einkauf nach der Einkaufsliste',p:'A',a:2,m:45,tip:'Alternativ Lieferservice – dann bestellt Christoffer vom Homeoffice aus.'},
+{id:'kueche',d:W6,w:'Abends',t:'Küche klar machen: Tisch, Flächen, Herd',p:'G',a:1,m:15,pf:1,tip:'Timer auf 15 Min. – danach ist Feierabend.'},
+{id:'w1s',d:[1],w:'Abends',t:'Gefaltete Wäsche in die Schränke räumen',p:'A',a:1,m:10,tip:'Christoffer legt die Stapel pro Zimmer bereit.'},
+{id:'badk',d:[2],w:'Abends',t:'Bad kurz: WC (Ariane), Waschbecken und Spiegel (Christoffer)',p:'G',a:2,m:10},
+{id:'tonne',d:[2],w:'Abends',t:'Tonnen an die Straße stellen',p:'A',a:3,m:5,tip:'Tag an euren Abfuhrkalender anpassen.'},
+{id:'einr',d:[3],w:'Abends',t:'Einkäufe in Kühlschrank und Vorrat einräumen',p:'C',a:1,m:10,tip:'Ariane stellt die Taschen auf Tischhöhe ab.'},
+{id:'sau',d:[5],w:'Block 1 (vormittags)',t:'Ecken, Treppe und Teppichkanten saugen',p:'A',a:2,m:15,tip:'Den Rest der Böden erledigt der Saugwischroboter.'},
+{id:'kgr',d:[5],w:'Block 1 (vormittags)',t:'Küche gründlich: Fronten, Spüle, Mikrowelle',p:'C',a:2,m:25,tip:'Nach 20 Min. kurze Pause.'},
+{id:'badg',d:[5],w:'Block 2 (nach der Kaffeepause)',t:'Bad gründlich: Dusche/Wanne, Armaturen, Boden',p:'A',a:3,m:25},
+{id:'staub',d:[5],w:'Block 2 (nach der Kaffeepause)',t:'Staub wischen auf Sitzhöhe: Tische, Regale, Fensterbänke',p:'C',a:1,m:15},
+{id:'rpfl',d:[5],w:'Block 2 (nach der Kaffeepause)',t:'Roboter-Pflege: Wischpads waschen, Station leeren, Bürste und Filter ausspülen',p:'C',a:1,m:10,tip:'Roboter und Station auf den Tisch holen lassen – dann geht alles im Sitzen.'},
+{id:'bett',d:[5],w:'Block 2 (nach der Kaffeepause)',t:'Betten neu beziehen',p:'G',a:2,m:15,b2:1,tip:'Alle 2 Wochen. Ariane spannt die Laken, Christoffer bezieht Kissen und Decken im Sitzen.'},
+{id:'garten',d:[5],w:'Nachmittags',t:'Garten/Außen: Laub, Wege, Terrasse',p:'G',a:2,m:30,tip:'Ariane harkt, Christoffer übernimmt Kübel und Kleinkram. Im Winter nur Wege freihalten.'},
+{id:'plan',d:[5],w:'Nebenbei',t:'Essensplan und Einkaufsliste für nächste Woche',p:'C',a:1,m:10}];
+const M=[
+{id:'fenster',n:1,t:'Fenster innen putzen',p:'G',a:2,m:45,tip:'Christoffer die erreichbaren Scheiben, Ariane den Rest.'},
+{id:'geraete',n:1,t:'Wasch- und Spülmaschine pflegen: Flusensieb, Filter, Pflegeprogramm',p:'C',a:1,m:15},
+{id:'ofen',n:2,t:'Backofen und Mikrowelle gründlich',p:'C',a:2,m:20,tip:'Backofen am Vorabend einweichen.'},
+{id:'rwart',n:2,t:'Roboter-Wartung: Seitenbürste, Sensoren, Räder, Station reinigen',p:'C',a:1,m:15,tip:'Filter, Pads und Bürsten bei Bedarf nachbestellen.'},
+{id:'oben',n:2,t:'Staub oben: Schränke, Lampen, Spinnweben',p:'A',a:2,m:20},
+{id:'kschr',n:3,t:'Kühlschrank auswischen, Vorräte und Tiefkühler durchsehen',p:'C',a:1,m:25},
+{id:'heizk',n:3,t:'Heizkörper und Handtuchheizkörper abstauben',p:'A',a:2,m:15},
+{id:'textil',n:4,t:'Badvorleger, Sofadecken, Duschvorhang waschen',p:'C',a:1,m:10},
+{id:'gsaison',n:4,t:'Garten saisonal: Rasen, Hecke, Beete winterfest',p:'G',a:3,m:60,tip:'Hecke und Rasen macht Ariane, Christoffer Beete und Kleinkram.'}];
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ls={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const mon=d=>{const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-(x.getDay()+6)%7);return x};
+const add=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
+function wkInfo(m){const th=add(m,3),y=th.getFullYear(),j=new Date(y,0,4),w=1+Math.round((th-mon(j))/6048e5);return{y,w,key:y+'-W'+String(w).padStart(2,'0')}}
+const now=new Date();let M0=mon(now),day=(now.getDay()+6)%7;
+let filt=ls.get('hh:f','alle'),me=ls.get('hh:me','C');
+let S={},WD={},db=null,unA=null,unB=null,ltimer=null;const chain={};
+const swp=p=>p==='C'?'A':p==='A'?'C':p;
+function inst(){const wi=wkInfo(M0),out=[];
+  for(const t of T){if(t.b2&&wi.w%2)continue;for(const od of t.d)out.push(mk(t,t.id+'@'+od,od))}
+  const n=Math.ceil(add(M0,5).getDate()/7);
+  for(const m of M)if(m.n===n)out.push(mk({...m,w:'Monatsaufgabe ('+n+'. Samstag)'},'m-'+m.id+'@5',5));
+  return out}
+function mk(t,key,od){const s=S[key]||{};const mv=Number.isInteger(s.mv)&&s.mv>=0&&s.mv<=5?s.mv:od;return{t,key,od,s,day:mv,p:s.sw?swp(t.p):t.p,done:!!s.done}}
+function render(){
+  const wi=wkInfo(M0),all=inst(),isNow=+M0===+mon(new Date());
+  $('wkl').textContent='KW '+wi.w+' · '+M0.getDate()+'.'+(M0.getMonth()+1)+'.–'+add(M0,6).getDate()+'.'+(add(M0,6).getMonth()+1)+'.';
+  $('days').innerHTML=DAYS.map((d,i)=>{const its=all.filter(x=>x.day===i),tm=its.reduce((a,x)=>a+x.t.m,0),dm=its.filter(x=>x.done).reduce((a,x)=>a+x.t.m,0);
+    return `<button class="day${i===day?' on':''}${isNow&&i===(new Date().getDay()+6)%7?' today':''}" data-d="${i}" aria-label="${DL[i]}"><b>${d}</b><small>${add(M0,i).getDate()}.</small><span class="bar"><i style="width:${tm?Math.round(dm/tm*100):0}%"></i></span></button>`}).join('');
+  $('flt').innerHTML='<span class="lbl">Zeigen:</span>'+[['alle','Alle'],['C','Christoffer'],['A','Ariane']].map(([k,l])=>`<button class="chip" data-f="${k}" aria-pressed="${filt===k}">${l}</button>`).join('');
+  $('me').innerHTML='<span class="lbl">Ich bin:</span>'+['C','A'].map(k=>`<button class="chip" data-me="${k}" aria-pressed="${me===k}">${P[k]}</button>`).join('');
+  const dn=WD.dienst||{};
+  $('dienst').innerHTML='<span class="lbl">Ariane hat Dienst:</span>'+[['sa','Samstag'],['so','Sonntag']].map(([k,l])=>`<button class="chip" data-di="${k}" aria-pressed="${!!dn[k]}">${l}</button>`).join('');
+  let note='';
+  if(day===5&&dn.sa&&dn.so)note='<b>Ganzes Wochenende Dienst:</b> Großputz fällt aus. Nur Bad kurz, der Roboter macht die Böden – der Rest kommt nächste Woche.';
+  else if(day===5&&dn.sa)note='<b>Ariane hat Samstag Dienst:</b> Christoffer macht seine Aufgaben trotzdem, in zwei Blöcken. Arianes Aufgaben über „Tag“ auf ihren freien Ausgleichstag schieben – oder nur das Nötigste: Bad kurz. Die Böden macht der Roboter.';
+  else if(day===6&&dn.so)note='Ariane hat Sonntag Dienst – am Plan ändert sich nichts.';
+  $('note').innerHTML=note;
+  const its=all.filter(x=>x.day===day);
+  $('sum').innerHTML=['C','A','G'].map(k=>{const a=its.filter(x=>x.p===k),tm=a.reduce((s,x)=>s+x.t.m,0),dm=a.filter(x=>x.done).reduce((s,x)=>s+x.t.m,0);
+    return `<div class="r"><span class="who ${k}">${P[k]}</span><span class="track"><i style="width:${tm?Math.round(dm/tm*100):0}%;background:var(--${k.toLowerCase()})"></i></span><span>${dm} / ${tm} Min.</span></div>`}).join('');
+  const vis=its.filter(x=>filt==='alle'||x.p===filt||x.p==='G');
+  if(day===6&&!its.length){$('list').innerHTML=`<div class="free"><svg viewBox="0 0 200 120" aria-hidden="true"><ellipse cx="100" cy="108" rx="80" ry="8" fill="var(--line)"/><path d="M40 70h120v18a20 20 0 0 1-20 20H60a20 20 0 0 1-20-20z" fill="var(--band)"/><rect x="40" y="62" width="120" height="12" rx="6" fill="var(--g)"/><path d="M160 72c22 0 22 26 0 26" fill="none" stroke="var(--band)" stroke-width="8"/><path d="M80 50c-8-12 8-18 0-32M100 50c-8-12 8-18 0-32M120 50c-8-12 8-18 0-32" fill="none" stroke="var(--acc)" stroke-width="5" stroke-linecap="round"/></svg><b>Sonntag ist frei.</b>Kein Haushalt – nur Geschirr in die Spülmaschine, wenn ihr mögt.</div>`}
+  else{const groups=[];for(const x of vis){let g=groups.find(g=>g.w===x.t.w);if(!g)groups.push(g={w:x.t.w,a:[]});g.a.push(x)}
+    $('list').innerHTML=groups.length?groups.map(g=>`<h2>${esc(g.w)}</h2>`+g.a.map(card).join('')).join(''):'<div class="free"><b>Nichts zu tun.</b>Für diese Auswahl steht heute nichts an.</div>'}
+  $('bad').hidden=day>4;
+  render.done=true}
+function card(x){const t=x.t,by=x.s.by==='C'||x.s.by==='A'?P[x.s.by]:'';
+  const opts=[0,1,2,3,4,5].map(i=>`<option value="${i}"${i===x.day?' selected':''}>${DL[i]}</option>`).join('');
+  return `<div class="card${x.done?' done':''}"><button class="chk" data-k="${x.key}" aria-pressed="${x.done}" aria-label="Erledigt: ${esc(t.t)}"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  <div><div class="t">${esc(t.t)}</div><div class="meta"><span class="who ${x.p}">${P[x.p]}</span><span class="eff e${t.a}" title="${EF[t.a]}"><i></i><i></i><i></i> ${EF[t.a]}</span><span>${t.m} Min.</span>${t.pf?'<span>Pflicht</span>':''}${x.day!==x.od?`<span class="mv">verschoben von ${DAYS[x.od]}</span>`:''}${x.s.sw?'<span class="mv">getauscht</span>':''}${x.done&&by?`<span>✓ ${by}</span>`:''}</div></div>
+  ${t.tip?`<p class="tip">${esc(t.tip)}</p>`:''}
+  <div class="act"><label class="lbl" for="mv-${x.key}">Tag</label><select id="mv-${x.key}" data-mv="${x.key}" data-od="${x.od}">${opts}</select>${t.p!=='G'?`<button data-sw="${x.key}">${x.s.sw?'Zurücktauschen':'Tauschen'}</button>`:''}</div></div>`}
+// Nach dem Einrichten hier die Web-App-URL aus Google Apps Script eintragen – dann muss man nur noch den Code eingeben:
+const PRESET_URL='https://script.google.com/macros/s/AKfycbxoTrAAF0rgtYBUiNrlddX_Qmmq2D7z_Iied0qRKkoGXqKplamhx44V6kdGIRWn20kx/exec';
+const okU=u=>/^https:\/\/script\.google\.com\//.test(u||'');
+let cfg=ls.get('hh:cfg',{u:'',c:''});if(!okU(cfg.u)&&okU(PRESET_URL))cfg={u:PRESET_URL,c:cfg.c||''};
+let Q=ls.get('hh:q',[]),busy=false;
+const gas=()=>!db&&okU(cfg.u)&&!!cfg.c;
+function loginState(bad){const show=!db&&okU(cfg.u)&&(!cfg.c||bad);$('login').hidden=!show;if(show&&bad)$('lmsg').textContent='Der Code stimmt nicht – bitte nochmal.'}
+function cacheWeek(wk){ls.set('hh:'+wk,S);ls.set('hh:w:'+wk,WD)}
+function overlay(wk){for(const op of Q){if(op.w!==wk)continue;if(op.k)S={...S,[op.k]:op.v};if(op.wd)WD=op.wd}}
+async function flush(){if(busy||!gas()||!Q.length)return;busy=true;
+  try{while(Q.length){const op=Q[0];const r=await fetch(cfg.u,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({...op,c:cfg.c})});const j=await r.json();if(j.error)throw new Error(j.error);Q.shift();ls.set('hh:q',Q)}
+    $('st').textContent='Synchronisiert über eure Google-Tabelle.'}
+  catch(e){$('st').textContent='Offline oder Sync-Fehler – Änderungen werden nachgeholt ('+Q.length+' offen).'}
+  busy=false}
+async function pull(){if(!gas())return;const wk=wkInfo(M0).key;
+  try{const r=await fetch(cfg.u+'?w='+encodeURIComponent(wk)+'&c='+encodeURIComponent(cfg.c));const j=await r.json();
+    if(j.error){if(j.error==='code'){$('st').textContent='Zugangscode stimmt nicht.';loginState(true)}else $('st').textContent='Sync-Fehler.';return}
+    loginState(false);
+    if(wk!==wkInfo(M0).key)return;
+    S=j.items&&typeof j.items==='object'?j.items:{};WD=j.wd&&typeof j.wd==='object'?j.wd:{};overlay(wk);cacheWeek(wk);render();
+    if(!Q.length)$('st').textContent='Synchronisiert über eure Google-Tabelle · '+new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}
+  catch(e){$('st').textContent='Offline – zeige den letzten Stand.'}}
+function push(op){Q.push(op);ls.set('hh:q',Q);flush().then(pull)}
+function save(key,patch){const cur={...(S[key]||{}),...patch};S={...S,[key]:cur};render();
+  const wk=wkInfo(M0).key;
+  if(db){chain[key]=(chain[key]||Promise.resolve()).then(()=>db.doc('weeks/'+wk+'/items/'+key).set(cur)).catch(e=>{$('st').textContent='Speichern fehlgeschlagen – bitte nochmal versuchen.'})}
+  else{cacheWeek(wk);if(gas())push({w:wk,k:key,v:cur})}}
+let wChain=Promise.resolve();
+function saveWeek(p){WD={...WD,...p};render();const wk=wkInfo(M0).key;
+  if(db)wChain=wChain.then(()=>db.doc('weeks/'+wk).set(WD)).catch(()=>{$('st').textContent='Speichern fehlgeschlagen.'});
+  else{cacheWeek(wk);if(gas())push({w:wk,wd:WD})}}
+function load(){const wk=wkInfo(M0).key;
+  if(!db){S=ls.get('hh:'+wk,{});WD=ls.get('hh:w:'+wk,{});overlay(wk);render();if(gas())flush().then(pull);else $('st').textContent=okU(cfg.u)?'Bitte oben anmelden.':'Nur auf diesem Gerät gespeichert – für Google-Speicher und Ariane unten die Einstellungen ausfüllen.';return}
+  if(unA)unA();if(unB)unB();clearTimeout(ltimer);S={};WD={};render();
+  ltimer=setTimeout(()=>{$('st').textContent='Daten noch nicht erreichbar – Haken sind evtl. nicht aktuell.'},10000);
+  unA=db.doc('weeks/'+wk).collection('items').onSnapshot(sn=>{const o={};for(const d of sn.docs){const v=d.data();if(v&&typeof v==='object')o[d.id]=v}S=o;if(!sn.metadata.fromCache){clearTimeout(ltimer);$('st').textContent='Synchronisiert – Haken erscheinen bei euch beiden sofort.'}render()},e=>{clearTimeout(ltimer);$('st').textContent='Sync nicht verfügbar – bitte Seite neu öffnen.'});
+  unB=db.doc('weeks/'+wk).onSnapshot(sn=>{WD=sn.exists?{...sn.data()}:{};render()},()=>{})}
+function setupLink(m){const d=JSON.stringify({u:cfg.u,c:cfg.c,m});return location.origin+location.pathname+'#s='+btoa(unescape(encodeURIComponent(d)))}
+function showCfg(){$('cu').value=cfg.u||'';$('cc').value=cfg.c||'';$('cfgbox').hidden=!!db;$('ari').hidden=!gas();$('mylink').hidden=!gas();loginState(false)}
+$('csave').onclick=()=>{cfg={u:$('cu').value.trim(),c:$('cc').value.trim()};ls.set('hh:cfg',cfg);showCfg();
+  $('cmsg').textContent=gas()?'Gespeichert – verbinde …':'Die Adresse muss mit https://script.google.com/ beginnen.';if(gas())load()};
+$('lgo').onclick=()=>{const c=$('lc').value.trim();if(!c)return;cfg={...cfg,c};ls.set('hh:cfg',cfg);$('lmsg').textContent='Melde an …';showCfg();load()};
+$('mylink').onclick=async()=>{const l=setupLink('C');$('alink').value=l;$('alink').hidden=false;try{await navigator.clipboard.writeText(l);$('cmsg').textContent='Dein Wiederherstellungs-Link ist kopiert – z. B. in deinen Notizen speichern.'}catch(e){$('cmsg').textContent='Link unten markieren und kopieren.'}};
+$('ari').onclick=async()=>{const l=setupLink('A');$('alink').value=l;$('alink').hidden=false;
+  try{await navigator.clipboard.writeText(l);$('cmsg').textContent='Link kopiert – schick ihn Ariane per WhatsApp. Sie öffnet ihn auf ihrem Handy und installiert die App von dort.'}
+  catch(e){$('cmsg').textContent='Link unten markieren, kopieren und Ariane schicken.'}};
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&gas())flush().then(pull)});
+window.addEventListener('online',()=>{if(gas())flush().then(pull)});
+setInterval(()=>{if(!document.hidden&&gas())pull()},30000);
+document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.d){day=+b.dataset.d;render()}
+  else if(b.dataset.f){filt=b.dataset.f;ls.set('hh:f',filt);render()}
+  else if(b.dataset.me){me=b.dataset.me;ls.set('hh:me',me);render()}
+  else if(b.dataset.di){const dn={...(WD.dienst||{})};dn[b.dataset.di]=!dn[b.dataset.di];saveWeek({dienst:dn})}
+  else if(b.dataset.k){const k=b.dataset.k,d=!(S[k]&&S[k].done);save(k,{done:d,by:d?me:null})}
+  else if(b.dataset.sw){const k=b.dataset.sw;save(k,{sw:!(S[k]&&S[k].sw)})}});
+document.addEventListener('change',e=>{const s=e.target;if(s.dataset&&s.dataset.mv){const v=+s.value,od=+s.dataset.od;save(s.dataset.mv,{mv:v===od?null:v})}});
+$('prev').onclick=()=>{M0=add(M0,-7);day=0;load()};
+$('next').onclick=()=>{M0=add(M0,7);day=0;load()};
+$('bad').onclick=()=>{const its=inst().filter(x=>x.day===day&&x.p==='C'&&!x.t.pf&&!x.done);if(!its.length){$('tnote').innerHTML='Heute ist nichts Verschiebbares mehr offen – gönn dir die Pause.';return}
+  for(const x of its)save(x.key,{mv:day+1});$('tnote').innerHTML=`<b>${its.length} Aufgabe${its.length>1?'n':''} auf ${DL[day+1]} verschoben.</b> Pflicht bleiben nur Spülmaschine und Küche. Erhol dich gut.`};
+let tEnd=0,tInt=0;
+$('tmr').onclick=()=>{if(tEnd){clearInterval(tInt);tEnd=0;$('tmr').textContent='20-Min.-Block starten';$('tmr').classList.remove('hot');return}
+  tEnd=Date.now()+20*60e3;$('tmr').classList.add('hot');$('tnote').innerHTML='';
+  const tick=()=>{const r=Math.max(0,tEnd-Date.now()),m=Math.floor(r/6e4),s=Math.floor(r%6e4/1e3);$('tmr').innerHTML=`<span class="timer">${m}:${String(s).padStart(2,'0')}</span> · stoppen`;
+    if(!r){clearInterval(tInt);tEnd=0;$('tmr').textContent='20-Min.-Block starten';$('tmr').classList.remove('hot');$('tnote').innerHTML='<b>Pause!</b> 5–10 Minuten durchatmen, etwas trinken – dann weiter oder für heute gut sein lassen.';try{navigator.vibrate&&navigator.vibrate([300,150,300])}catch(e){}}};
+  tick();tInt=setInterval(tick,1000)};
+try{const h=location.hash;if(h.startsWith('#s=')){const d=JSON.parse(decodeURIComponent(escape(atob(h.slice(3)))));
+  if(d&&okU(d.u)&&typeof d.c==='string'){cfg={u:d.u,c:d.c};ls.set('hh:cfg',cfg);if(d.m==='A'||d.m==='C'){me=d.m;ls.set('hh:me',me)}}
+  history.replaceState(null,'',location.pathname)}}catch(e){}
+render();showCfg();
+$('st').textContent='Lade …';
+if('serviceWorker' in navigator&&location.protocol==='https:'&&!/claude/.test(location.hostname)){try{navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){}}
+let started=false;const start=()=>{if(started)return;started=true;showCfg();load()};
+if(window.claude&&window.claude.use){(async()=>{try{db=await window.claude.use('db')}catch(e){db=null}start()})();setTimeout(start,11000)}
+else start();
+}
+</script>
+</body>
+</html>
